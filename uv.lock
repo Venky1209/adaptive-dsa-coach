@@ -1,0 +1,2 @@
+# Placeholder lockfile for OpenEnv validation.
+# Run `uv lock` to regenerate a full lockfile when uv is available.
