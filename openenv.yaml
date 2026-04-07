@@ -1,0 +1,8 @@
+spec_version: 1
+name: adaptive-dsa-coach
+version: "1.0.0"
+description: Adaptive DSA Coach for tutoring, burnout handling, and placement/hackathon support.
+type: space
+runtime: fastapi
+app: "app:app"
+port: 7860
