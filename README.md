@@ -167,7 +167,8 @@ Supported environment variables:
 
 - `API_BASE_URL` - defaults to `https://router.huggingface.co/v1`
 - `MODEL_NAME` - defaults to `Qwen/Qwen2.5-72B-Instruct`
-- `HF_TOKEN` - Hugging Face token used for OpenAI-compatible requests
+- `API_KEY` - API key injected by the hackathon validator and used for OpenAI-compatible requests
+- `HF_TOKEN` - optional local fallback for Hugging Face-compatible runs
 
 The script prints the expected transcript format for each episode:
 

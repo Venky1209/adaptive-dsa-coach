@@ -390,7 +390,7 @@ class InferenceConfig:
     task_name: str
     model_name: str
     api_base_url: str
-    hf_token: str
+    api_key: str
     use_llm: bool = False
     client: OpenAI | None = None
 
@@ -426,6 +426,7 @@ def _build_config(argv: list[str]) -> InferenceConfig:
     parser.add_argument("--task", dest="task_flag")
     parser.add_argument("--model-name", dest="model_name")
     parser.add_argument("--api-base-url", dest="api_base_url")
+    parser.add_argument("--api-key", dest="api_key")
     parser.add_argument("--hf-token", dest="hf_token")
     parser.add_argument("--use-llm", action="store_true")
     parsed, _unknown = parser.parse_known_args(argv)
@@ -433,14 +434,19 @@ def _build_config(argv: list[str]) -> InferenceConfig:
     task_name = _task_name_from_args(argv)
     model_name = parsed.model_name or os.getenv("MODEL_NAME", DEFAULT_MODEL_NAME)
     api_base_url = parsed.api_base_url or os.getenv("API_BASE_URL", DEFAULT_API_BASE_URL)
-    hf_token = parsed.hf_token or os.getenv("HF_TOKEN", "")
-    use_llm = bool(parsed.use_llm or os.getenv("USE_LLM_POLICY", "0") == "1")
-    client = OpenAI(base_url=api_base_url, api_key=hf_token or "hf_dummy")
+    api_key = (
+        parsed.api_key
+        or parsed.hf_token
+        or os.getenv("API_KEY")
+        or os.getenv("HF_TOKEN", "")
+    )
+    use_llm = bool(parsed.use_llm or os.getenv("USE_LLM_POLICY", "0") == "1" or api_key)
+    client = OpenAI(base_url=api_base_url, api_key=api_key or "hf_dummy")
     return InferenceConfig(
         task_name=task_name,
         model_name=model_name,
         api_base_url=api_base_url,
-        hf_token=hf_token,
+        api_key=api_key,
         use_llm=use_llm,
         client=client,
     )
@@ -640,7 +646,7 @@ def _run_episode(config: InferenceConfig) -> tuple[bool, int, float, list[float]
 
 
 def _maybe_use_llm(config: InferenceConfig) -> None:
-    if not config.use_llm:
+    if not config.use_llm and not config.api_key:
         return
     if config.client is None:
         return
@@ -650,7 +656,7 @@ def _maybe_use_llm(config: InferenceConfig) -> None:
             input=[
                 {
                     "role": "system",
-                    "content": "Return only a concise coaching strategy summary.",
+                    "content": "Return only a concise coaching strategy summary for DSA tutoring.",
                 },
                 {
                     "role": "user",
