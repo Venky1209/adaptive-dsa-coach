@@ -432,10 +432,23 @@ def create_app() -> FastAPI:
 	@application.get("/metadata")
 	def metadata() -> dict[str, Any]:
 		tasks_with_graders = [task_name for task_name in list_task_names() if task_name in TASK_GRADERS]
+		detailed_tasks = []
+		difficulty_map = {"EASY": "easy", "MEDIUM": "medium", "HARD": "hard"}
+		for spec in list_task_specs():
+			detailed_tasks.append(
+				{
+					"task_id": spec.task_name,
+					"task_name": spec.task_name,
+					"difficulty": difficulty_map.get(spec.task_name, "unknown"),
+					"grader": spec.grader,
+					"has_grader": spec.task_name in TASK_GRADERS,
+				}
+			)
 		return {
 			"name": "adaptive-dsa-coach",
 			"description": "Adaptive DSA tutoring environment with deterministic multi-task grading.",
 			"tasks": list(list_task_names()),
+			"task_specs": detailed_tasks,
 			"tasks_with_graders": tasks_with_graders,
 			"tasks_with_graders_count": len(tasks_with_graders),
 		}

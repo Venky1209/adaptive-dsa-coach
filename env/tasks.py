@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Final
+from typing import Any, Final
 
 from .models import (
     ACTION_TYPES,
@@ -129,6 +129,60 @@ TASK_SPECS: Final[dict[str, AdaptiveDSATaskSpec]] = {
 }
 
 
+def grade_easy_task(*args: Any, **kwargs: Any):
+    # Lazy import avoids a circular dependency: graders imports get_task_spec from this module.
+    from .graders import grade_easy
+
+    return grade_easy(*args, **kwargs)
+
+
+def grade_medium_task(*args: Any, **kwargs: Any):
+    # Lazy import avoids a circular dependency: graders imports get_task_spec from this module.
+    from .graders import grade_medium
+
+    return grade_medium(*args, **kwargs)
+
+
+def grade_hard_task(*args: Any, **kwargs: Any):
+    # Lazy import avoids a circular dependency: graders imports get_task_spec from this module.
+    from .graders import grade_hard
+
+    return grade_hard(*args, **kwargs)
+
+
+# Explicit task manifest for static validators that enumerate tasks and graders directly.
+TASKS: list[dict[str, Any]] = [
+    {
+        "task_id": "EASY",
+        "task_name": "EASY",
+        "difficulty": "easy",
+        "spec": TASK_SPECS["EASY"],
+        "grader": grade_easy_task,
+        "grader_name": "grade_easy",
+    },
+    {
+        "task_id": "MEDIUM",
+        "task_name": "MEDIUM",
+        "difficulty": "medium",
+        "spec": TASK_SPECS["MEDIUM"],
+        "grader": grade_medium_task,
+        "grader_name": "grade_medium",
+    },
+    {
+        "task_id": "HARD",
+        "task_name": "HARD",
+        "difficulty": "hard",
+        "spec": TASK_SPECS["HARD"],
+        "grader": grade_hard_task,
+        "grader_name": "grade_hard",
+    },
+]
+
+TASKS_WITH_GRADERS: dict[str, dict[str, Any]] = {
+    entry["task_name"]: entry for entry in TASKS
+}
+
+
 def list_task_names() -> tuple[str, ...]:
     return TASK_NAMES
 
@@ -166,12 +220,17 @@ def get_action_types() -> tuple[str, ...]:
 
 __all__ = [
     "DEFAULT_CURRENT_PROBLEM_SUFFIX",
+    "TASKS",
+    "TASKS_WITH_GRADERS",
     "TASK_INITIAL_STATES",
     "TASK_MAX_STEPS",
     "TASK_SPECS",
     "TASK_SUCCESS_THRESHOLDS",
     "build_initial_observation",
     "build_task_spec",
+    "grade_easy_task",
+    "grade_hard_task",
+    "grade_medium_task",
     "get_action_types",
     "get_default_task_name",
     "get_max_steps",
