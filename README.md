@@ -13,11 +13,22 @@ short_description: Adaptive DSA tutoring environment for the OpenEnv hackathon.
 
 # adaptive-dsa-coach
 
-Adaptive DSA Coach is an OpenEnv-compatible tutoring environment for the OpenEnv x Scaler x Meta PyTorch hackathon. It simulates a student progressing through DSA practice while handling burnout, distraction, motivation, and career-context pressure.
+Adaptive DSA Coach is a deterministic OpenEnv tutoring environment built for the OpenEnv x Scaler x Meta hackathon. It simulates a student working through DSA practice while dealing with distraction, burnout, motivation swings, and placement/hackathon pressure.
 
-## Overview
+## At a Glance
 
-The environment models a coaching loop around six tracked topics:
+| Item | Value |
+| --- | --- |
+| Environment name | `adaptive_dsa_coach` |
+| Tasks | `EASY`, `MEDIUM`, `HARD` |
+| Server | FastAPI on port `7860` |
+| Deployment | Docker / Hugging Face Spaces |
+| Validation | `./validate.sh <space-url>` |
+| Inference | `python inference.py <TASK>` |
+
+## What It Models
+
+The environment tracks six DSA topics:
 
 - `arrays`
 - `strings`
@@ -26,17 +37,17 @@ The environment models a coaching loop around six tracked topics:
 - `trees`
 - `system_design`
 
-Agents act through typed actions and receive dense rewards for useful coaching behavior. The environment is deterministic, JSON-serializable, and designed to work with OpenEnv-style HTTP deployment.
+Each episode keeps the learner state JSON-serializable and deterministic. The runtime injects recurring events such as distraction, motivation drops, and burnout signals so agents must respond instead of following a static script.
 
 ## Tasks
 
-Three tasks are available:
+Three fixed tasks are available:
 
-- `EASY` - shorter episode, lower stress, reward shaping around basic coaching support
-- `MEDIUM` - placement-season pressure with burnout handling and topic targeting
-- `HARD` - longer episode with stronger emphasis on recovery, session management, and sustained progress
+- `EASY` - shorter episodes, lower stress, and simpler recovery behavior
+- `MEDIUM` - placement-season pressure with stronger burnout handling
+- `HARD` - longer episodes with more aggressive session management and recovery
 
-Each task has fixed initial state values, max steps, and a success threshold.
+Every task has its own initial state, episode length, and success threshold.
 
 ## Action Space
 
@@ -52,11 +63,11 @@ Supported action types:
 - `advance_session`
 - `end_day`
 
-Action parameters are sent as a `dict` and are interpreted deterministically by the environment.
+Actions accept a parameter dictionary and are applied deterministically.
 
 ## Observation Space
 
-All observations include the following required fields:
+Each observation includes:
 
 - `topic_mastery`
 - `motivation`
@@ -73,46 +84,50 @@ All observations include the following required fields:
 
 ## Reward Design
 
-The environment uses shaped rewards to encourage useful tutoring behavior:
+Rewards are shaped to encourage coaching behaviors that actually improve the learner state:
 
-- Weak-topic targeting is rewarded for plan and exercise actions.
-- High-quality feedback and optimization hints are rewarded during solution review.
-- Distraction handling is rewarded when the redirect is productive.
-- Burnout handling is rewarded when the agent reduces difficulty or changes topic appropriately.
+- Targeting weak topics is rewarded.
+- Good feedback and optimization hints are rewarded during solution review.
+- Distraction handling is rewarded when it redirects attention productively.
+- Burnout handling is rewarded when the agent lowers pressure or shifts topics appropriately.
 - Motivation support is rewarded more strongly when motivation is already low.
-- `end_day` can grant a large bonus when the episode finishes sustainably.
+- `end_day` can produce a large bonus if the episode closes sustainably.
 
-Rewards are always clamped to the range `-1.0` to `1.0`.
+All rewards are clamped to `[-1.0, 1.0]`.
 
 ## Determinism
 
-The environment is deterministic:
+The project is designed for reproducibility:
 
-- `random.seed(42)` is used for event injection and reproducibility.
-- Graders are deterministic for the same input.
-- State is JSON serializable.
+- `random.seed(42)` is used for event injection.
+- Graders are deterministic for the same state and trajectory.
+- State and API payloads are JSON serializable.
 
-## Files
-
-The project is organized as:
+## Repository Layout
 
 ```text
 adaptive-dsa-coach/
-├── env/
-│   ├── __init__.py
-│   ├── models.py
-│   ├── environment.py
-│   ├── tasks.py
-│   └── graders.py
 ├── app.py
 ├── inference.py
 ├── openenv.yaml
-├── Dockerfile
+├── pyproject.toml
 ├── requirements.txt
-└── README.md
+├── validate.sh
+├── Dockerfile
+├── env/
+│   ├── __init__.py
+│   ├── environment.py
+│   ├── graders.py
+│   ├── models.py
+│   └── tasks.py
+└── server/
+    ├── __init__.py
+    └── app.py
 ```
 
-## Local Development
+The root `app.py` is the main FastAPI app. `server/app.py` re-exports the same app for OpenEnv packaging and deployment compatibility.
+
+## Local Setup
 
 Install dependencies:
 
@@ -120,27 +135,27 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Run the FastAPI server locally on port `7860`:
+Run the API locally:
 
 ```bash
 uvicorn app:app --host 0.0.0.0 --port 7860
 ```
 
-Reset the environment by posting a task name to `/reset`, then step through actions with `/step`, and inspect the current state with `/state`.
+Then interact with the environment through the HTTP endpoints below.
 
-Available server routes:
+## API Endpoints
 
-- `GET /`
-- `GET /health`
-- `GET /tasks`
-- `GET /state`
-- `POST /state`
-- `POST /reset`
-- `POST /step`
+- `GET /` - environment summary and active task list
+- `GET /health` - basic health check
+- `GET /tasks` - available task specs
+- `GET /state` - current environment state
+- `POST /state` - current environment state
+- `POST /reset` - reset to a task
+- `POST /step` - submit one action and receive the next state
 
 ## Inference
 
-The inference entrypoint lives at the repo root:
+Run the inference loop with one of the supported tasks:
 
 ```bash
 python inference.py EASY
@@ -148,13 +163,13 @@ python inference.py MEDIUM
 python inference.py HARD
 ```
 
-Environment variables supported by the inference script:
+Supported environment variables:
 
 - `API_BASE_URL` - defaults to `https://router.huggingface.co/v1`
 - `MODEL_NAME` - defaults to `Qwen/Qwen2.5-72B-Instruct`
 - `HF_TOKEN` - Hugging Face token used for OpenAI-compatible requests
 
-The script prints the exact required transcript format:
+The script prints the expected transcript format for each episode:
 
 ```text
 [START] task=X env=adaptive_dsa_coach model=Y
@@ -171,20 +186,34 @@ docker build -t adaptive-dsa-coach .
 docker run --rm -p 7860:7860 adaptive-dsa-coach
 ```
 
-The container listens on `7860` and exposes a health check at `/health`.
+The container listens on `7860` and exposes `/health` for readiness checks.
 
 ## OpenEnv Manifest
 
-The OpenEnv manifest is configured for Hugging Face Spaces with:
+The Hugging Face Spaces manifest is configured as:
 
 - `spec_version: 1`
 - `type: space`
 - `runtime: fastapi`
-- `app: app:app`
+- `app: server.app:app`
 - `port: 7860`
+
+## Validation
+
+Use the bundled script to verify the repo end to end:
+
+```bash
+./validate.sh https://your-space.hf.space
+```
+
+The validator checks three things:
+
+1. The live Hugging Face Space responds to `/reset`.
+2. The Docker image builds successfully.
+3. `openenv validate` passes for the local repository.
 
 ## Notes
 
-- The project is designed for deterministic grading and reproducible outputs.
-- The environment state and all payloads are JSON serializable.
-- The current implementation keeps the coaching loop practical and focused on DSA tutoring, burnout handling, and placement/hackathon support.
+- The environment is intentionally practical rather than overly abstract.
+- The focus is on useful coaching behavior, not model personalization.
+- The repo is ready for GitHub, Hugging Face Spaces, and local OpenEnv validation.
