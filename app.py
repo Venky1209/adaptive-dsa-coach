@@ -447,8 +447,7 @@ def create_app() -> FastAPI:
 		return {
 			"name": "adaptive-dsa-coach",
 			"description": "Adaptive DSA tutoring environment with deterministic multi-task grading.",
-			"tasks": list(list_task_names()),
-			"task_specs": detailed_tasks,
+			"tasks": detailed_tasks,
 			"tasks_with_graders": tasks_with_graders,
 			"tasks_with_graders_count": len(tasks_with_graders),
 		}
