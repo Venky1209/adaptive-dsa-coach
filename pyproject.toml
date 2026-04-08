@@ -15,4 +15,4 @@ dependencies = [
 server = "server.app:main"
 
 [tool.setuptools]
-packages = ["env", "server"]
+packages = ["env", "environment", "server"]

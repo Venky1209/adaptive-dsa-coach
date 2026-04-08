@@ -1,0 +1,67 @@
+"""Compatibility package that mirrors the OpenEnv-style environment layout."""
+
+from env.environment import AdaptiveDSACoachEnv, State
+from env.graders import (
+	TASK_GRADERS,
+	build_grader,
+	grade,
+	grade_easy,
+	grade_episode,
+	grade_hard,
+	grade_medium,
+	grade_task,
+	get_task_grader,
+	score_breakdown,
+)
+from env.models import Action, Observation
+from env.tasks import (
+	TASK_INITIAL_STATES,
+	TASK_MAX_STEPS,
+	TASK_SPECS,
+	TASK_SUCCESS_THRESHOLDS,
+	build_initial_observation,
+	build_task_spec,
+	get_action_types,
+	get_default_task_name,
+	get_max_steps,
+	get_success_threshold,
+	get_task_spec,
+	get_topic_names,
+	list_task_names,
+	list_task_specs,
+)
+from .tasks import TASKS, TASKS_WITH_GRADERS, list_tasks_with_graders
+
+__all__ = [
+	"Action",
+	"AdaptiveDSACoachEnv",
+	"Observation",
+	"State",
+	"TASK_GRADERS",
+	"TASKS",
+	"TASKS_WITH_GRADERS",
+	"TASK_INITIAL_STATES",
+	"TASK_MAX_STEPS",
+	"TASK_SPECS",
+	"TASK_SUCCESS_THRESHOLDS",
+	"build_grader",
+	"build_initial_observation",
+	"build_task_spec",
+	"get_action_types",
+	"get_default_task_name",
+	"get_max_steps",
+	"get_success_threshold",
+	"get_task_grader",
+	"get_task_spec",
+	"get_topic_names",
+	"grade",
+	"grade_easy",
+	"grade_episode",
+	"grade_hard",
+	"grade_medium",
+	"grade_task",
+	"list_task_names",
+	"list_task_specs",
+	"list_tasks_with_graders",
+	"score_breakdown",
+]
