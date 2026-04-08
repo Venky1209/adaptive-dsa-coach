@@ -23,7 +23,7 @@ class GradingResult:
 
 
 def _clamp_score(value: float) -> float:
-    return max(0.0, min(1.0, float(value)))
+    return max(0.01, min(0.99, float(value)))
 
 
 def _as_mapping(value: Any) -> dict[str, Any]:

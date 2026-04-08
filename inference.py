@@ -170,7 +170,7 @@ except Exception:  # pragma: no cover - local fallback for environments without 
     TASK_SUCCESS_THRESHOLDS = {"EASY": 0.5, "MEDIUM": 0.6, "HARD": 0.7}
 
     def _clamp_unit_interval(value: float) -> float:
-        return max(0.0, min(1.0, float(value)))
+        return max(0.01, min(0.99, float(value)))
 
     def _clamp_reward(value: float) -> float:
         return max(-1.0, min(1.0, float(value)))
@@ -396,7 +396,7 @@ class InferenceConfig:
 
 
 def _clamp_unit_interval(value: float) -> float:
-    return max(0.0, min(1.0, float(value)))
+    return max(0.01, min(0.99, float(value)))
 
 
 def _lower(text: Any) -> str:
