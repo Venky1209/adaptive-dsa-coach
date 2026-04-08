@@ -673,12 +673,17 @@ def main(argv: list[str] | None = None) -> int:
     config = _build_config(args)
     _maybe_use_llm(config)
 
-    print(f"[START] task={config.task_name} env={DEFAULT_ENV_NAME} model={config.model_name}", flush=True)
-    success, steps, score, rewards = _run_episode(config)
-    print(
-        f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={_format_reward_list(rewards)}",
-        flush=True,
-    )
+    all_tasks = list(list_task_names())  # ("EASY", "MEDIUM", "HARD")
+
+    for task_name in all_tasks:
+        config.task_name = task_name
+        print(f"[START] task={task_name} env={DEFAULT_ENV_NAME} model={config.model_name}", flush=True)
+        success, steps, score, rewards = _run_episode(config)
+        print(
+            f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={_format_reward_list(rewards)}",
+            flush=True,
+        )
+
     return 0
 
 
