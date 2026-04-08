@@ -1,221 +1,128 @@
+<div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=Adaptive%20DSA%20Coach&fontSize=50&animation=fadeIn&fontAlignY=35&desc=A%20deterministic%20human-simulated%20OpenEnv%20for%20Agentic%20Tutors&descAlignY=55&descAlign=50" alt="Adaptive DSA Coach Header" />
+</div>
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/OpenEnv-v1.0-brightgreen?style=for-the-badge" alt="OpenEnv Spec" />
+  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/Hugging_Face-Spaces-FFD21E?style=for-the-badge&logo=huggingface&logoColor=white" alt="HF Space" />
+  <img src="https://img.shields.io/badge/License-MIT-gray?style=for-the-badge" alt="License" />
+</div>
+
+<br>
+
+Most RL environments test if an agent can solve a problem. **Adaptive DSA Coach tests if an agent can *teach* a human.**
+
+Built for the OpenEnv x Meta x Scaler Hackathon, this environment simulates a student grinding Data Structures & Algorithms under real-world psychological constraints: burnout, motivation decay, and placement season panic. It provides a deterministic, rigorous testbed for evaluating the emotional intelligence and pedagogy of frontier models representing the next generation of Agentic Tutors.
+
 ---
-title: Adaptive DSA Coach
-emoji: 🧠
-colorFrom: blue
-colorTo: green
-sdk: docker
-pinned: false
-license: mit
-tags:
-  - openenv
-short_description: Adaptive DSA tutoring environment for the OpenEnv hackathon.
+
+## 🏛️ Architecture
+
+![Architecture Diagram](mermaiddd.png)
+
+## 🌍 Why This Matters
+
+Current OpenEnv tasks rely heavily on static, transactional goals (e.g., "parse this email", "solve this equation"). While useful, they fail to evaluate an agent's ability to act continuously over time with a volatile, stateful human.
+
+**Adaptive DSA Coach fills a massive gap in RLHF and Agent research.** By simulating a student whose motivation swings unpredictably and whose burnout risk compounds over time, this environment forces Open LLM models to exhibit **long-horizon planning and psychological empathy**, rather than just greedy heuristic problem-solving. This tackles the exact frontier being explored by OpenAI, Khanmigo, and Meta's core educational research teams.
+
+## ⚡ How It's Different
+
+*   **Modeling the Learner, Not the Problem:** Naive environments ask the agent to solve a graph problem. This environment asks: *"The student's graph mastery is 0.2, but their burnout is at 80% because it's Placement Season. Do you push them to do a Hard problem, or do you redirect them to Core CS fundamentals and give honest coaching?"*
+*   **Psychological Realism:** The environment tracks hidden states like `burnout_risk` and injects `distraction` events randomly. If the AI tutor pushes too hard when motivation is low, the student's mastery fundamentally degrades.
+*   **Anti-Exploit Bounds:** Graders evaluate behavioral criteria, not just outcome states — agents must demonstrate the right action at the right time, not just arrive at a high-motivation final state. The dynamic grader cross-evaluates final state combinations strictly clamping scores between `(0, 1)` based on holistic progression.
+
 ---
 
-# adaptive-dsa-coach
+## 🔍 Observation Space
 
-Adaptive DSA Coach is a deterministic OpenEnv tutoring environment built for the OpenEnv x Scaler x Meta hackathon. It simulates a student working through DSA practice while dealing with distraction, burnout, motivation swings, and placement/hackathon pressure.
+The observation space is highly structured, providing a comprehensive numeric snapshot of the student's mental and academic state.
 
-## At a Glance
+| Field | Type | Range | Description |
+| :--- | :--- | :--- | :--- |
+| `topic_mastery` | `Dict[str, float]` | `0.0 - 1.0` | Mastery across 6 DSA domains (arrays, strings, dp, graphs, trees, system_design). |
+| `motivation` | `float` | `0.0 - 1.0` | Current willingness to learn. Drops if pushed too hard. |
+| `burnout_risk` | `float` | `0.0 - 1.0` | Risk of complete session failure. Spikes during Hard tasks or repetitive loops. |
+| `streak` | `int` | `0 - ∞` | Consecutive successful study days. |
+| `daily_time_left` | `int` | `0 - 1440` | Minutes remaining in the student's simulated day. |
+| `current_topic` | `str` | `Enum` | The DSA topic currently being focused on. |
+| `current_problem_id` | `str` | `Hash` | ID of the active problem being solved. |
+| `event_flags` | `List[str]` | `Enum` | Injected psychological states (e.g., `distraction`, `burnout_signal`). |
+| `career_context` | `str` | `Enum` | Environmental stress modifier (e.g., `hackathon_deadline`, `placement_season`). |
 
-| Item | Value |
-| --- | --- |
-| Environment name | `adaptive_dsa_coach` |
-| Tasks | `EASY`, `MEDIUM`, `HARD` |
-| Server | FastAPI on port `7860` |
-| Deployment | Docker / Hugging Face Spaces |
-| Validation | `./validate.sh <space-url>` |
-| Inference | `python inference.py <TASK>` |
+## 🕹️ Action Space
 
-## What It Models
+The action space consists of discrete pedagogical moves the agent can utilize to guide the simulated student.
 
-The environment tracks six DSA topics:
+| Action Type | Parameters | Description |
+| :--- | :--- | :--- |
+| `build_plan` | `topic`, `difficulty` | Structures the next learning phase based on weaknesses. |
+| `recommend_exercise` | `topic`, `difficulty` | Suggests a concrete problem. Pushing `hard` during high burnout triggers a penalty. |
+| `evaluate_solution` | `feedback`, `optimization_hint` | Grades the student. >50 char feedback yields dense rewards. |
+| `give_hint` | `hint` | Provides minimal guidance without giving away the answer. |
+| `handle_distraction` | `redirect` | Attempts to pull a distracted student back to focus productively. |
+| `handle_burnout` | `topic`, `difficulty` | De-escalates pressure to restore motivation and shed stress flags. |
+| `give_motivation` | `style` | Encourages the student (styles: `encouraging`, `honest_recovery`, `career_linked`). |
+| `advance_session` | None | Progresses time forward neutrally. |
+| `end_day` | None | Concludes the session. Rewards heavily if ended sustainably. |
 
-- `arrays`
-- `strings`
-- `dp`
-- `graphs`
-- `trees`
-- `system_design`
+---
 
-Each episode keeps the learner state JSON-serializable and deterministic. The runtime injects recurring events such as distraction, motivation drops, and burnout signals so agents must respond instead of following a static script.
+## 🎯 Reward Design Deep-Dive
 
-## Tasks
+RL algorithms famously struggle in sparse-reward environments. Adaptive DSA Coach implements **dense, non-sparse reward shaping** mapped directly to empathetic pedagogical effectiveness:
 
-Three fixed tasks are available:
+- **Targeting Weaknesses:** Recommending an exercise for the student's *weakest* tracked topic mathematically yields immediate positive step-rewards.
+- **Contextual Emotion Penalties:** Pushing a `hard` difficulty exercise when a student's `burnout_risk` exceeds `0.7` immediately penalizes the agent and degrades the student's state.
+- **Productive Redirection:** When an event flag like `distraction` is injected, the agent isn't expected to magically ignore it. Providing a valid `handle_distraction` redirect removes the negative flag and grants a scaling reward bonus.
+- **Final Baseline Rubric:** The step-rewards strictly act to guide the model during trajectory. The *real* phase evaluation relies on a deterministic rubric that parses the 20-step trajectory to ensure the student actually finished the session with elevated motivation, safely reduced burnout, and demonstrably improved topic matrices. 
 
-- `EASY` - shorter episodes, lower stress, and simpler recovery behavior
-- `MEDIUM` - placement-season pressure with stronger burnout handling
-- `HARD` - longer episodes with more aggressive session management and recovery
+---
 
-Every task has its own initial state, episode length, and success threshold.
+## 🧗 Task Difficulty Breakdown
 
-## Action Space
+The environment features three deeply simulated personas spanning the difficulty spectrum:
 
-Supported action types:
+| Task | Max Steps | Simulation Context | Success Threshold | Target Coach Behavior |
+| :--- | :--- | :--- | :--- | :--- |
+| **`EASY`** | 6 | A normal student who gets easily distracted. | `> 0.50` | Basic task scheduling, minor redirection, and simple motivation. |
+| **`MEDIUM`** | 10 | Under `placement_season` stress. Plagued by motivation drops. | `> 0.60` | De-escalation, addressing severe `burnout_signals`, and topic balancing. |
+| **`HARD`** | 20 | Immediate `hackathon_deadline` panic. Mastery is low, time is running out. | `> 0.70` | High-stakes psychological triage. Must improve >3 distinct topics without breaching the burnout boundary. |
 
-- `build_plan`
-- `recommend_exercise`
-- `evaluate_solution`
-- `give_hint`
-- `handle_distraction`
-- `handle_burnout`
-- `give_motivation`
-- `advance_session`
-- `end_day`
+---
 
-Actions accept a parameter dictionary and are applied deterministically.
+## 🚀 Quick Start
 
-## Observation Space
+Run the environment locally in seconds:
 
-Each observation includes:
-
-- `topic_mastery`
-- `motivation`
-- `burnout_risk`
-- `streak`
-- `daily_time_left`
-- `current_topic`
-- `current_problem_id`
-- `time_on_problem`
-- `recent_accuracy`
-- `recent_speed`
-- `event_flags`
-- `career_context`
-
-## Reward Design
-
-Rewards are shaped to encourage coaching behaviors that actually improve the learner state:
-
-- Targeting weak topics is rewarded.
-- Good feedback and optimization hints are rewarded during solution review.
-- Distraction handling is rewarded when it redirects attention productively.
-- Burnout handling is rewarded when the agent lowers pressure or shifts topics appropriately.
-- Motivation support is rewarded more strongly when motivation is already low.
-- `end_day` can produce a large bonus if the episode closes sustainably.
-
-All rewards are clamped to `[-1.0, 1.0]`.
-
-## Determinism
-
-The project is designed for reproducibility:
-
-- `random.seed(42)` is used for event injection.
-- Graders are deterministic for the same state and trajectory.
-- State and API payloads are JSON serializable.
-
-## Repository Layout
-
-```text
-adaptive-dsa-coach/
-├── app.py
-├── inference.py
-├── openenv.yaml
-├── pyproject.toml
-├── requirements.txt
-├── validate.sh
-├── Dockerfile
-├── env/
-│   ├── __init__.py
-│   ├── environment.py
-│   ├── graders.py
-│   ├── models.py
-│   └── tasks.py
-└── server/
-    ├── __init__.py
-    └── app.py
-```
-
-The root `app.py` is the main FastAPI app. `server/app.py` re-exports the same app for OpenEnv packaging and deployment compatibility.
-
-## Local Setup
-
-Install dependencies:
-
+**1. Install dependencies:**
 ```bash
 pip install -r requirements.txt
 ```
 
-Run the API locally:
-
+**2. Start the FastAPI Server:**
 ```bash
 uvicorn app:app --host 0.0.0.0 --port 7860
 ```
 
-Then interact with the environment through the HTTP endpoints below.
-
-## API Endpoints
-
-- `GET /` - environment summary and active task list
-- `GET /health` - basic health check
-- `GET /tasks` - available task specs
-- `GET /state` - current environment state
-- `POST /state` - current environment state
-- `POST /reset` - reset to a task
-- `POST /step` - submit one action and receive the next state
-- `POST /grader` - grade a completed trajectory for a specific task
-
-## Inference
-
-Run the inference loop with one of the supported tasks:
-
+**3. Run the baseline inference script:**
 ```bash
-python inference.py EASY
-python inference.py MEDIUM
-python inference.py HARD
+python inference.py EASY   # or MEDIUM / HARD
 ```
 
-Supported environment variables:
+## 🐳 Docker
 
-- `API_BASE_URL` - defaults to `https://router.huggingface.co/v1`
-- `MODEL_NAME` - defaults to `Qwen/Qwen2.5-72B-Instruct`
-- `API_KEY` - API key injected by the hackathon validator and used for OpenAI-compatible requests
-- `HF_TOKEN` - optional local fallback for Hugging Face-compatible runs
-
-The script prints the expected transcript format for each episode:
-
-```text
-[START] task=X env=adaptive_dsa_coach model=Y
-[STEP] step=N action=X reward=0.00 done=false error=null
-[END] success=true steps=N score=0.00 rewards=r1,r2,...
-```
-
-## Docker
-
-Build and run the container:
-
+Validate the production deployment logic locally:
 ```bash
 docker build -t adaptive-dsa-coach .
 docker run --rm -p 7860:7860 adaptive-dsa-coach
 ```
 
-The container listens on `7860` and exposes `/health` for readiness checks.
+## 🧪 OpenEnv Validation
 
-## OpenEnv Manifest
-
-The Hugging Face Spaces manifest is configured as:
-
-- `spec_version: 1`
-- `type: space`
-- `runtime: fastapi`
-- `app: server.app:app`
-- `port: 7860`
-
-## Validation
-
-Use the bundled script to verify the repo end to end:
-
+Verify compliance strictly against the OpenEnv spec:
 ```bash
-./validate.sh https://your-space.hf.space
+./validate.sh https://your-space-name.hf.space
 ```
-
-The validator checks three things:
-
-1. The live Hugging Face Space responds to `/reset`.
-2. The Docker image builds successfully.
-3. `openenv validate` passes for the local repository.
-
-## Notes
-
-- The environment is intentionally practical rather than overly abstract.
-- The focus is on useful coaching behavior, not model personalization.
-- The repo is ready for GitHub, Hugging Face Spaces, and local OpenEnv validation.
