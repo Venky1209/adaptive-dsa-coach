@@ -152,6 +152,7 @@ Then interact with the environment through the HTTP endpoints below.
 - `POST /state` - current environment state
 - `POST /reset` - reset to a task
 - `POST /step` - submit one action and receive the next state
+- `POST /grader` - grade a completed trajectory for a specific task
 
 ## Inference
 

@@ -22,6 +22,7 @@ from env.models import (
 	VALID_MOTIVATION_STYLES,
 )
 from env.tasks import build_initial_observation, get_default_task_name, get_task_spec, list_task_names, list_task_specs
+from env.graders import TASK_GRADERS, grade_task
 
 
 EVENT_INJECTION_POOL: Final[tuple[str, ...]] = ("distraction", "motivation_drop", "burnout_signal")
@@ -431,8 +432,18 @@ def create_app() -> FastAPI:
 
 	@application.get("/tasks")
 	def tasks() -> dict[str, Any]:
+		tasks_payload: list[dict[str, Any]] = []
+		for spec in list_task_specs():
+			task_name = spec.task_name
+			tasks_payload.append(
+				{
+					**spec.model_dump(),
+					"grader_name": f"grade_{task_name.lower()}",
+					"has_grader": task_name in TASK_GRADERS,
+				}
+			)
 		return {
-			"tasks": [spec.model_dump() for spec in list_task_specs()],
+			"tasks": tasks_payload,
 			"default_task": get_default_task_name(),
 		}
 
@@ -461,6 +472,31 @@ def create_app() -> FastAPI:
 		action = AdaptiveDSAAction.model_validate(action_payload)
 		state, result = runtime.step(action)
 		return AdaptiveDSAStepResponse(state=state, result=result)
+
+	@application.post("/grader")
+	def grader(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+		request_body = payload or {}
+		task_name = str(request_body.get("task_name") or request_body.get("task") or get_default_task_name()).strip().upper()
+		if task_name not in TASK_GRADERS:
+			raise HTTPException(status_code=404, detail=f"unknown task: {task_name}")
+
+		initial_state = request_body.get("initial_state")
+		final_state = request_body.get("final_state")
+		actions = request_body.get("actions")
+		trajectory = request_body.get("trajectory")
+		result = grade_task(
+			task_name=task_name,
+			initial_state=initial_state,
+			final_state=final_state,
+			actions=actions,
+			trajectory=trajectory,
+		)
+		return {
+			"task_name": result.task_name,
+			"score": result.score,
+			"breakdown": result.breakdown,
+			"has_grader": True,
+		}
 
 	return application
 
