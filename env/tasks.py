@@ -116,6 +116,7 @@ def build_task_spec(task_name: str) -> AdaptiveDSATaskSpec:
         max_steps=TASK_MAX_STEPS[task_name],
         success_threshold=TASK_SUCCESS_THRESHOLDS[task_name],
         initial_state=build_initial_observation(task_name),
+        grader=f"grade_{task_name.lower()}",
         description=(
             f"{task_name} AdaptiveDSA Coach task with exact initial state, "
             f"deterministic transitions, and dense coaching rewards."

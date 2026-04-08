@@ -24,9 +24,9 @@ from env.tasks import (
 
 # Keep the task/grader pairing explicit for scanner-friendly discovery.
 TASKS_WITH_GRADERS: dict[str, dict[str, Any]] = {
-	"EASY": {"spec": get_task_spec("EASY"), "grader": grade_easy},
-	"MEDIUM": {"spec": get_task_spec("MEDIUM"), "grader": grade_medium},
-	"HARD": {"spec": get_task_spec("HARD"), "grader": grade_hard},
+	"EASY": {"spec": get_task_spec("EASY"), "grader": grade_easy, "grader_name": "grade_easy"},
+	"MEDIUM": {"spec": get_task_spec("MEDIUM"), "grader": grade_medium, "grader_name": "grade_medium"},
+	"HARD": {"spec": get_task_spec("HARD"), "grader": grade_hard, "grader_name": "grade_hard"},
 }
 
 TASKS = tuple(TASKS_WITH_GRADERS.keys())

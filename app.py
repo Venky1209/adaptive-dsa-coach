@@ -438,6 +438,7 @@ def create_app() -> FastAPI:
 			tasks_payload.append(
 				{
 					**spec.model_dump(),
+					"grader": spec.grader,
 					"grader_name": f"grade_{task_name.lower()}",
 					"has_grader": task_name in TASK_GRADERS,
 				}

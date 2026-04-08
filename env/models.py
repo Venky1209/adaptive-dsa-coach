@@ -129,6 +129,7 @@ class AdaptiveDSATaskSpec(BaseSchema):
     max_steps: int = Field(ge=1)
     success_threshold: float = Field(ge=0.0, le=1.0)
     initial_state: AdaptiveDSAObservation
+    grader: str = ""
     description: str = ""
 
     @field_validator("description")
