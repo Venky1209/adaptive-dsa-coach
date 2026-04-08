@@ -530,6 +530,20 @@ def grade_episode(task_name: str, trajectory: Sequence[Any] | None = None, final
     ).score
 
 
+TASK_GRADERS = {
+    "EASY": build_grader("EASY"),
+    "MEDIUM": build_grader("MEDIUM"),
+    "HARD": build_grader("HARD"),
+}
+
+
+def get_task_grader(task_name: str):
+    normalized_task_name = str(task_name).strip().upper()
+    if normalized_task_name not in TASK_GRADERS:
+        raise KeyError(f"unknown task: {task_name}")
+    return TASK_GRADERS[normalized_task_name]
+
+
 def score_breakdown(*args: Any, **kwargs: Any) -> dict[str, float]:
     return grade_task(*args, **kwargs).breakdown
 
@@ -543,5 +557,7 @@ __all__ = [
     "grade_hard",
     "grade_medium",
     "grade_task",
+    "get_task_grader",
+    "TASK_GRADERS",
     "score_breakdown",
 ]
