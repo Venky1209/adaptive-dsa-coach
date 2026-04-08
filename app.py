@@ -447,9 +447,10 @@ def create_app() -> FastAPI:
 		return AdaptiveDSAResetResponse(state=runtime.get_state())
 
 	@application.post("/reset", response_model=AdaptiveDSAResetResponse)
-	def reset(payload: dict[str, Any]) -> AdaptiveDSAResetResponse:
+	def reset(payload: dict[str, Any] | None = None) -> AdaptiveDSAResetResponse:
 		runtime: AdaptiveDSARuntime = application.state.runtime
-		task_name = payload.get("task_name") or payload.get("task_id") or payload.get("task") or get_default_task_name()
+		request_body = payload or {}
+		task_name = request_body.get("task_name") or request_body.get("task_id") or request_body.get("task") or get_default_task_name()
 		state = runtime.reset(str(task_name).strip().upper())
 		return AdaptiveDSAResetResponse(state=state)
 
