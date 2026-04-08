@@ -23,13 +23,38 @@ from env.tasks import (
 )
 
 # Keep the task/grader pairing explicit for scanner-friendly discovery.
+TASKS: list[dict[str, Any]] = [
+	{
+		"task_name": "EASY",
+		"task_id": "EASY",
+		"difficulty": "easy",
+		"spec": get_task_spec("EASY"),
+		"grader": grade_easy,
+		"grader_name": "grade_easy",
+	},
+	{
+		"task_name": "MEDIUM",
+		"task_id": "MEDIUM",
+		"difficulty": "medium",
+		"spec": get_task_spec("MEDIUM"),
+		"grader": grade_medium,
+		"grader_name": "grade_medium",
+	},
+	{
+		"task_name": "HARD",
+		"task_id": "HARD",
+		"difficulty": "hard",
+		"spec": get_task_spec("HARD"),
+		"grader": grade_hard,
+		"grader_name": "grade_hard",
+	},
+]
+
 TASKS_WITH_GRADERS: dict[str, dict[str, Any]] = {
-	"EASY": {"spec": get_task_spec("EASY"), "grader": grade_easy, "grader_name": "grade_easy"},
-	"MEDIUM": {"spec": get_task_spec("MEDIUM"), "grader": grade_medium, "grader_name": "grade_medium"},
-	"HARD": {"spec": get_task_spec("HARD"), "grader": grade_hard, "grader_name": "grade_hard"},
+	entry["task_name"]: entry for entry in TASKS
 }
 
-TASKS = tuple(TASKS_WITH_GRADERS.keys())
+TASK_NAMES = tuple(entry["task_name"] for entry in TASKS)
 
 
 def list_tasks_with_graders() -> dict[str, dict[str, Any]]:
@@ -38,6 +63,7 @@ def list_tasks_with_graders() -> dict[str, dict[str, Any]]:
 
 __all__ = [
 	"TASKS",
+	"TASK_NAMES",
 	"TASKS_WITH_GRADERS",
 	"TASK_GRADERS",
 	"TASK_INITIAL_STATES",

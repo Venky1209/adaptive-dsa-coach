@@ -419,11 +419,25 @@ def create_app() -> FastAPI:
 	def root() -> dict[str, Any]:
 		runtime: AdaptiveDSARuntime = application.state.runtime
 		state = runtime.get_state()
+		tasks_with_graders = [task_name for task_name in list_task_names() if task_name in TASK_GRADERS]
 		return {
 			"name": "adaptive-dsa-coach",
 			"env": "adaptive_dsa_coach",
 			"tasks": list(list_task_names()),
+			"tasks_with_graders": tasks_with_graders,
+			"tasks_with_graders_count": len(tasks_with_graders),
 			"current_task": state.task_name,
+		}
+
+	@application.get("/metadata")
+	def metadata() -> dict[str, Any]:
+		tasks_with_graders = [task_name for task_name in list_task_names() if task_name in TASK_GRADERS]
+		return {
+			"name": "adaptive-dsa-coach",
+			"description": "Adaptive DSA tutoring environment with deterministic multi-task grading.",
+			"tasks": list(list_task_names()),
+			"tasks_with_graders": tasks_with_graders,
+			"tasks_with_graders_count": len(tasks_with_graders),
 		}
 
 	@application.get("/health")
@@ -433,18 +447,24 @@ def create_app() -> FastAPI:
 	@application.get("/tasks")
 	def tasks() -> dict[str, Any]:
 		tasks_payload: list[dict[str, Any]] = []
+		difficulty_map = {"EASY": "easy", "MEDIUM": "medium", "HARD": "hard"}
 		for spec in list_task_specs():
 			task_name = spec.task_name
 			tasks_payload.append(
 				{
 					**spec.model_dump(),
+					"task_id": task_name,
+					"difficulty": difficulty_map.get(task_name, "unknown"),
 					"grader": spec.grader,
 					"grader_name": f"grade_{task_name.lower()}",
 					"has_grader": task_name in TASK_GRADERS,
 				}
 			)
+		tasks_with_graders = [task for task in tasks_payload if task.get("has_grader")]
 		return {
 			"tasks": tasks_payload,
+			"tasks_with_graders": tasks_with_graders,
+			"tasks_with_graders_count": len(tasks_with_graders),
 			"default_task": get_default_task_name(),
 		}
 
@@ -477,7 +497,7 @@ def create_app() -> FastAPI:
 	@application.post("/grader")
 	def grader(payload: dict[str, Any] | None = None) -> dict[str, Any]:
 		request_body = payload or {}
-		task_name = str(request_body.get("task_name") or request_body.get("task") or get_default_task_name()).strip().upper()
+		task_name = str(request_body.get("task_name") or request_body.get("task_id") or request_body.get("task") or get_default_task_name()).strip().upper()
 		if task_name not in TASK_GRADERS:
 			raise HTTPException(status_code=404, detail=f"unknown task: {task_name}")
 
@@ -485,6 +505,17 @@ def create_app() -> FastAPI:
 		final_state = request_body.get("final_state")
 		actions = request_body.get("actions")
 		trajectory = request_body.get("trajectory")
+
+		# Support minimal validator payloads that only provide task identifiers.
+		if initial_state is None:
+			initial_state = build_initial_observation(task_name).model_dump()
+		if final_state is None:
+			final_state = build_initial_observation(task_name).model_dump()
+		if actions is None:
+			actions = []
+		if trajectory is None:
+			trajectory = []
+
 		result = grade_task(
 			task_name=task_name,
 			initial_state=initial_state,
@@ -494,6 +525,8 @@ def create_app() -> FastAPI:
 		)
 		return {
 			"task_name": result.task_name,
+			"task_id": result.task_name,
+			"grader": f"grade_{result.task_name.lower()}",
 			"score": result.score,
 			"breakdown": result.breakdown,
 			"has_grader": True,
