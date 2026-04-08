@@ -18,17 +18,17 @@ Built for the OpenEnv x Meta x Scaler Hackathon, this environment simulates a st
 
 ---
 
-## 🏛️ Architecture
+## Architecture
 
 ![Architecture Diagram](mermaiddd.png)
 
-## 🌍 Why This Matters
+## Why This Matters
 
 Current OpenEnv tasks rely heavily on static, transactional goals (e.g., "parse this email", "solve this equation"). While useful, they fail to evaluate an agent's ability to act continuously over time with a volatile, stateful human.
 
 **Adaptive DSA Coach fills a massive gap in RLHF and Agent research.** By simulating a student whose motivation swings unpredictably and whose burnout risk compounds over time, this environment forces Open LLM models to exhibit **long-horizon planning and psychological empathy**, rather than just greedy heuristic problem-solving. This tackles the exact frontier being explored by OpenAI, Khanmigo, and Meta's core educational research teams.
 
-## ⚡ How It's Different
+## How It's Different
 
 *   **Modeling the Learner, Not the Problem:** Naive environments ask the agent to solve a graph problem. This environment asks: *"The student's graph mastery is 0.2, but their burnout is at 80% because it's Placement Season. Do you push them to do a Hard problem, or do you redirect them to Core CS fundamentals and give honest coaching?"*
 *   **Psychological Realism:** The environment tracks hidden states like `burnout_risk` and injects `distraction` events randomly. If the AI tutor pushes too hard when motivation is low, the student's mastery fundamentally degrades.
@@ -36,7 +36,7 @@ Current OpenEnv tasks rely heavily on static, transactional goals (e.g., "parse 
 
 ---
 
-## 🔍 Observation Space
+## Observation Space
 
 The observation space is highly structured, providing a comprehensive numeric snapshot of the student's mental and academic state.
 
@@ -52,7 +52,7 @@ The observation space is highly structured, providing a comprehensive numeric sn
 | `event_flags` | `List[str]` | `Enum` | Injected psychological states (e.g., `distraction`, `burnout_signal`). |
 | `career_context` | `str` | `Enum` | Environmental stress modifier (e.g., `hackathon_deadline`, `placement_season`). |
 
-## 🕹️ Action Space
+## Action Space
 
 The action space consists of discrete pedagogical moves the agent can utilize to guide the simulated student.
 
@@ -70,7 +70,7 @@ The action space consists of discrete pedagogical moves the agent can utilize to
 
 ---
 
-## 🎯 Reward Design Deep-Dive
+## Reward Design Deep-Dive
 
 RL algorithms famously struggle in sparse-reward environments. Adaptive DSA Coach implements **dense, non-sparse reward shaping** mapped directly to empathetic pedagogical effectiveness:
 
@@ -81,7 +81,7 @@ RL algorithms famously struggle in sparse-reward environments. Adaptive DSA Coac
 
 ---
 
-## 🧗 Task Difficulty Breakdown
+## Task Difficulty Breakdown
 
 The environment features three deeply simulated personas spanning the difficulty spectrum:
 
@@ -93,7 +93,7 @@ The environment features three deeply simulated personas spanning the difficulty
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 Run the environment locally in seconds:
 
@@ -112,7 +112,7 @@ uvicorn app:app --host 0.0.0.0 --port 7860
 python inference.py EASY   # or MEDIUM / HARD
 ```
 
-## 🐳 Docker
+## Docker
 
 Validate the production deployment logic locally:
 ```bash
@@ -120,7 +120,7 @@ docker build -t adaptive-dsa-coach .
 docker run --rm -p 7860:7860 adaptive-dsa-coach
 ```
 
-## 🧪 OpenEnv Validation
+## OpenEnv Validation
 
 Verify compliance strictly against the OpenEnv spec:
 ```bash
